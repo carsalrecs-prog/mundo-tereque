@@ -1,16 +1,57 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { auth, getBaseRef } from './firebase';
+import { auth, getBaseRef, googleProvider } from './firebase';
+import firebase from './firebase';
 import { marked } from 'marked';
 import {
     Heart, Download, Trash2, Edit2, Search, User,
     Plus, X, Sparkles, Check, Dices as Dice, Calendar as CalendarIcon,
     Clock, Repeat, Image as ImageIcon, Bold as BoldIcon,
-    Italic as ItalicIcon, GitCommit, Settings as SettingsIcon
+    Italic as ItalicIcon, GitCommit, Settings as SettingsIcon,
+    Upload, LogOut, Camera, Link as LinkIcon
 } from 'lucide-react';
 
 const GEMINI_MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3.0-flash", "gemini-flash-latest"];
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDkSAqtXh2MdpEou7XQPJxuEKw3eCL1m6g";
+
+// --- IMAGE COMPRESSION UTILITY ---
+const compressImage = (file, maxWidth = 1200, quality = 0.7) => new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ratio = Math.min(maxWidth / img.width, maxWidth / img.height, 1);
+            canvas.width = img.width * ratio;
+            canvas.height = img.height * ratio;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(resolve, 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+
+// --- DRIVE UPLOAD ---
+const uploadToDrive = async (file, accessToken) => {
+    const compressed = await compressImage(file);
+    const metadata = { name: `MundoTereque_${Date.now()}.jpg`, mimeType: 'image/jpeg' };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', compressed);
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+        method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: form
+    });
+    const data = await res.json();
+    if (!data.id) throw new Error('Upload failed');
+    // Make it publicly viewable
+    await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
+        method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'reader', type: 'anyone' })
+    });
+    return `https://lh3.googleusercontent.com/d/${data.id}=s1200`;
+};
 
 // --- CUSTOM COMPONENTS WITH MOTION ---
 const Toast = ({ message, type = 'success', onClose }) => {
@@ -77,6 +118,8 @@ const Confetti = () => {
 
 export default function App() {
     const [user, setUser] = useState(null);
+    const [googleAccessToken, setGoogleAccessToken] = useState(null);
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [activeProfile, setActiveProfile] = useState('novia');
     const [viewMode, setViewMode] = useState('wiki');
 
@@ -116,18 +159,58 @@ export default function App() {
     const [showDateInput, setShowDateInput] = useState(false);
     const [editingDateId, setEditingDateId] = useState(null);
 
+    // Image upload state
+    const [imageMode, setImageMode] = useState('url'); // 'url' or 'device'
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef(null);
     const answerRef = useRef(null);
 
+    // --- GOOGLE AUTH HANDLERS ---
+    const handleGoogleLogin = async () => {
+        setIsLoggingIn(true);
+        try {
+            const result = await auth.signInWithPopup(googleProvider);
+            const credential = result.credential;
+            if (credential) setGoogleAccessToken(credential.accessToken);
+            showToast(`¡Bienvenid@ ${result.user.displayName}! ❤️`);
+        } catch (error) {
+            console.error('Login error:', error);
+            if (error.code !== 'auth/popup-closed-by-user') showToast('Error al iniciar sesión', 'error');
+        }
+        setIsLoggingIn(false);
+    };
+
+    const handleGuestLogin = async () => {
+        setIsLoggingIn(true);
+        try { await auth.signInAnonymously(); showToast('Modo invitado activado'); }
+        catch (e) { showToast('Error de conexión', 'error'); }
+        setIsLoggingIn(false);
+    };
+
+    const handleLogout = async () => {
+        await auth.signOut();
+        setGoogleAccessToken(null);
+        setShowSettings(false);
+    };
+
+    // --- IMAGE HANDLERS ---
+    const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onload = (ev) => setImagePreview(ev.target.result);
+        reader.readAsDataURL(file);
+    };
+
+    const clearImageSelection = () => {
+        setImageFile(null); setImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
     useEffect(() => {
-        const initAuth = async () => {
-            try {
-                if (!auth.currentUser) await auth.signInAnonymously();
-            } catch (error) {
-                console.error("Auth Error:", error);
-                showToast("Iniciando offline.", 'info');
-            }
-        };
-        initAuth();
         const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
         return () => unsubscribe();
     }, []);
@@ -191,11 +274,27 @@ export default function App() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!user) return showToast("Conectando...", 'error');
-        const data = { target: activeProfile, category: formData.category, question: formData.question, answer: formData.answer, imageUrl: formData.imageUrl || null, date: new Date().toLocaleDateString(), timestamp: Date.now() };
+        let finalImageUrl = formData.imageUrl || null;
+        // Handle device image upload to Google Drive
+        if (imageMode === 'device' && imageFile) {
+            if (!googleAccessToken) return showToast('Inicia sesión con Google para subir fotos', 'error');
+            setIsUploading(true);
+            try {
+                finalImageUrl = await uploadToDrive(imageFile, googleAccessToken);
+                showToast('Foto subida a Drive ✨');
+            } catch (err) {
+                console.error('Drive upload error:', err);
+                setIsUploading(false);
+                return showToast('Error al subir foto. Intenta de nuevo.', 'error');
+            }
+            setIsUploading(false);
+        }
+        const data = { target: activeProfile, category: formData.category, question: formData.question, answer: formData.answer, imageUrl: finalImageUrl, date: new Date().toLocaleDateString(), timestamp: Date.now() };
         try {
             if (editingId) { await getBaseRef().collection('wiki_entries').doc(editingId).update(data); showToast("Actualizado ✨"); setEditingId(null); }
             else { await getBaseRef().collection('wiki_entries').add(data); showToast("Guardado ❤️"); }
             setFormData(prev => ({ ...prev, question: '', answer: '', imageUrl: '' }));
+            clearImageSelection();
         } catch (err) { showToast("Error al guardar", 'error'); }
     };
 
@@ -344,7 +443,20 @@ export default function App() {
         try { return marked.parse(text || ''); } catch (e) { return text; }
     };
 
-    if (!user) return <div className="min-h-screen flex flex-col items-center justify-center text-gray-400"><div className="spinner border-rose-500 mb-4"></div>Conectando a tu Nube...</div>;
+    // --- LOGIN SCREEN ---
+    if (!user) return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: 'radial-gradient(ellipse at top, #4a0404 0%, #0a0000 100%)' }}>
+            <motion.div initial={{ opacity: 0, y: 30, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, type: 'spring' }} className="glass-panel p-10 rounded-3xl max-w-sm w-full text-center border border-white/10 shadow-2xl">
+                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 3 }} className="text-6xl mb-6">❤️</motion.div>
+                <h1 className="text-3xl font-bold text-white mb-2">Mundo Tereque</h1>
+                <p className="text-gray-400 text-sm mb-8">El universo privado de Flor y Terequito</p>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleGoogleLogin} disabled={isLoggingIn} className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 py-3.5 px-6 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all mb-4 cursor-pointer">
+                    {isLoggingIn ? <div className="spinner border-gray-800" /> : <><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg> Iniciar con Google</>}
+                </motion.button>
+                <button onClick={handleGuestLogin} disabled={isLoggingIn} className="w-full text-gray-500 text-sm hover:text-gray-300 transition-colors py-2 cursor-pointer">Continuar como invitado →</button>
+            </motion.div>
+        </div>
+    );
 
     const theme = activeProfile === 'novia'
         ? { accent: 'text-rose-500', bg: 'bg-rose-900', hover: 'hover:bg-rose-800', border: 'border-rose-900/50', glow: 'shadow-[0_0_25px_rgba(225,29,72,0.3)]' }
@@ -363,12 +475,38 @@ export default function App() {
                         <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="glass-panel p-8 rounded-3xl max-w-md w-full" style={{ backgroundColor: '#0f172a' }}>
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-2xl font-bold text-white flex items-center gap-3"><SettingsIcon /> Cuenta</h3>
-                                <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-white"><X size={24} /></button>
+                                <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-white cursor-pointer" aria-label="Cerrar"><X size={24} /></button>
                             </div>
-                            <div className="space-y-6">
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-sm text-gray-300 leading-relaxed">
-                                    Tus datos se guardan en la Nube. La versión completa no requiere login extra si no deseas perderla limpia la cache.
+                            <div className="space-y-4">
+                                {user && !user.isAnonymous ? (
+                                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+                                        {user.photoURL && <img src={user.photoURL} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-rose-500" />}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-white truncate">{user.displayName}</p>
+                                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                                        <p className="text-sm text-gray-400">Modo invitado. Inicia sesión con Google para subir fotos y sincronizar datos.</p>
+                                        <button onClick={handleGoogleLogin} className="mt-3 bg-white text-gray-800 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-100 transition-all cursor-pointer">Vincular con Google</button>
+                                    </div>
+                                )}
+                                {googleAccessToken && <div className="bg-green-900/20 p-3 rounded-xl border border-green-500/30 text-green-300 text-xs flex items-center gap-2"><Check size={14} /> Google Drive conectado para fotos</div>}
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                    <p className="text-xs text-gray-500 mb-2">DATOS</p>
+                                    <p className="text-sm text-gray-300">{entries.length} recuerdos · {pendingGames.length} juegos pendientes · {datesList.length} fechas</p>
                                 </div>
+                                <button onClick={async () => {
+                                    const data = { entries, pendingGames, datesList, relationshipStart, categories };
+                                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a'); a.href = url; a.download = `MundoTereque_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                                    a.click(); URL.revokeObjectURL(url); showToast('Backup descargado');
+                                }} className="w-full flex items-center justify-center gap-2 bg-white/5 text-gray-300 hover:text-white py-3 rounded-xl font-bold border border-white/10 transition-all cursor-pointer"><Download size={16} /> Descargar Backup</button>
+                                {user && !user.isAnonymous && (
+                                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-300 py-3 rounded-xl font-bold border border-red-900/30 hover:bg-red-900/20 transition-all cursor-pointer"><LogOut size={16} /> Cerrar Sesión</button>
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>
@@ -587,8 +725,30 @@ export default function App() {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold tracking-wider mb-1 flex items-center gap-1 text-gray-400"><ImageIcon size={12} /> IMAGEN (URL OPCIONAL)</label>
-                                            <input type="url" name="imageUrl" value={formData.imageUrl} onChange={handleInputChange} placeholder="https://ejemplo.com/foto.jpg" className="w-full p-3 rounded-xl bg-black/30 border border-white/10 focus:border-white/30 text-white text-sm outline-none" />
+                                            <label className="text-[10px] font-bold tracking-wider mb-2 flex items-center gap-1 text-gray-400"><ImageIcon size={12} /> IMAGEN</label>
+                                            <div className="flex gap-1 mb-2">
+                                                <button type="button" onClick={() => { setImageMode('url'); clearImageSelection(); }} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${imageMode === 'url' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}><LinkIcon size={12} /> URL</button>
+                                                <button type="button" onClick={() => setImageMode('device')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${imageMode === 'device' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}><Camera size={12} /> Dispositivo</button>
+                                            </div>
+                                            {imageMode === 'url' ? (
+                                                <input type="url" name="imageUrl" value={formData.imageUrl} onChange={handleInputChange} placeholder="https://ejemplo.com/foto.jpg" className="w-full p-3 rounded-xl bg-black/30 border border-white/10 focus:border-white/30 text-white text-sm outline-none" />
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                                                    {!imagePreview ? (
+                                                        <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full p-4 rounded-xl border-2 border-dashed border-white/10 hover:border-white/30 text-gray-400 hover:text-white text-sm transition-all flex flex-col items-center gap-2 cursor-pointer">
+                                                            <Upload size={20} />
+                                                            <span>{googleAccessToken ? 'Subir foto (se guarda en tu Drive)' : 'Inicia sesión con Google para subir fotos'}</span>
+                                                        </button>
+                                                    ) : (
+                                                        <div className="relative rounded-xl overflow-hidden border border-white/10">
+                                                            <img src={imagePreview} alt="Preview" className="w-full max-h-40 object-cover" />
+                                                            <button type="button" onClick={clearImageSelection} className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-full hover:bg-black/80 transition-colors cursor-pointer" aria-label="Quitar imagen"><X size={14} /></button>
+                                                            {isUploading && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><div className="spinner border-white" /> <span className="ml-2 text-white text-sm">Subiendo a Drive...</span></div>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex gap-3 pt-4">{editingId && <button type="button" onClick={handleCancelEdit} className="px-6 py-3 bg-white/5 text-gray-300 hover:text-white rounded-xl font-bold text-sm border border-white/10 active:scale-95 transition-all">Cancelar</button>}<button type="submit" className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg ${theme.bg} ${theme.hover} transition-all active:scale-95`}>{editingId ? 'Guardar' : 'Crear Recuerdo'}</button></div>
                                     </form>

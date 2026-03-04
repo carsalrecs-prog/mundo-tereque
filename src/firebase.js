@@ -25,4 +25,7 @@ if (!firebase.apps.length) {
 export const auth = firebase.auth();
 export const db = firebase.firestore();
 export const getBaseRef = () => db;
+export const googleProvider = new firebase.auth.GoogleAuthProvider();
+// Request Drive scope so we can upload images to user's Google Drive
+googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
 export default firebase;
