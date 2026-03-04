@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 const GEMINI_MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3.0-flash", "gemini-flash-latest"];
-const apiKey = "AIzaSyATKMJQ-dfMG0_adq51eIDBswnH1twdlqM";
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDkSAqtXh2MdpEou7XQPJxuEKw3eCL1m6g";
 
 // --- CUSTOM COMPONENTS WITH MOTION ---
 const Toast = ({ message, type = 'success', onClose }) => {
