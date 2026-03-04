@@ -8,8 +8,8 @@ const firebaseConfig = {
     projectId: "mundo-tereque",
     storageBucket: "mundo-tereque.firebasestorage.app",
     messagingSenderId: "498391783858",
-    appId: "1:498391783858:web:791e21eac76dbeafee2cab",
-    measurementId: "G-58HLHF8FTJ"
+    appId: "1:498391783858:web:14cfd2aa5cacd057ee2cab",
+    measurementId: "G-LLG37RX6XZ"
 };
 
 let app;

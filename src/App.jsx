@@ -202,6 +202,14 @@ export default function App() {
     const handleEdit = (e) => { setEditingId(e.id); setFormData({ category: e.category, question: e.question, answer: e.answer, imageUrl: e.imageUrl || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }); showToast("Editando...", 'info'); };
     const handleCancelEdit = () => { setEditingId(null); setFormData(prev => ({ ...prev, question: '', answer: '', imageUrl: '' })); };
 
+    const savePostIt = async (e) => {
+        const text = e.target.innerText;
+        setPostItText(text);
+        await getBaseRef().collection('settings').doc('postit').set({ text });
+        setIsEditingPostIt(false);
+        showToast("Nota guardada ✨");
+    };
+
     const confirmDelete = async () => {
         const { id, type } = deleteModal;
         if (!id) return;
@@ -413,6 +421,27 @@ export default function App() {
                 )}
             </div>
 
+            {/* POST-IT NOTE (Visible on Wiki & Dates) */}
+            {(viewMode === 'wiki' || viewMode === 'dates') && (
+                <div className="post-it-bg p-4 rounded-br-3xl rounded-tl-2xl shadow-xl transform rotate-1 hover:rotate-0 transition-all relative max-w-sm mx-auto mb-8 border border-yellow-400/50">
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-12 h-6 bg-red-500/20 backdrop-blur-sm shadow-sm rounded-sm"></div>
+                    {isEditingPostIt ? (
+                        <div
+                            contentEditable
+                            suppressContentEditableWarning
+                            onBlur={savePostIt}
+                            className="font-handwriting text-xl text-yellow-900 outline-none min-h-[60px] leading-relaxed text-center p-2"
+                            autoFocus
+                        >{postItText}</div>
+                    ) : (
+                        <div onClick={() => setIsEditingPostIt(true)} className="font-handwriting text-xl text-yellow-900 min-h-[60px] cursor-pointer flex items-center justify-center text-center leading-relaxed">
+                            {postItText}
+                        </div>
+                    )}
+                    <span className="absolute bottom-2 right-3 text-[10px] text-yellow-700/50 font-sans uppercase font-bold">Nota del día</span>
+                </div>
+            )}
+
             {/* MAIN CONTENT WITH FRAMER MOTION TRANSITIONS */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -491,36 +520,101 @@ export default function App() {
                         <div className="grid md:grid-cols-12 gap-6">
                             <div className="md:col-span-4 order-2 md:order-1">
                                 <div className={`glass-panel p-6 rounded-3xl sticky top-28 border-t-4 ${theme.border}`}>
-                                    <h2 className={`text-xl font-bold flex gap-2 ${theme.accent} items-center mb-6`}>{editingId ? <Edit2 size={20} /> : <Plus size={20} />} Nuevo</h2>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className={`text-xl font-bold flex gap-2 ${theme.accent} items-center`}>{editingId ? <Edit2 size={20} /> : <Plus size={20} />}{editingId ? 'Editar' : 'Nuevo Recuerdo'}</h2>
+                                        {isAddingCategory && <button onClick={() => setIsAddingCategory(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>}
+                                    </div>
                                     <form onSubmit={handleSubmit} className="space-y-4">
-                                        <div><label className="text-[10px] font-bold tracking-wider mb-1 block text-gray-400">TÍTULO</label><input name="question" value={formData.question} onChange={handleInputChange} className="w-full p-3 rounded-xl" required /></div>
+                                        <div>
+                                            <div className="flex justify-between mb-1"><label className="text-[10px] font-bold tracking-wider text-gray-400">CATEGORÍA</label> {!isAddingCategory && <button type="button" onClick={() => setIsAddingCategory(true)} className={`text-[10px] underline hover:text-white ${theme.accent}`}>Nueva</button>}</div>
+                                            {isAddingCategory ? <div className="flex gap-2"><input autoFocus placeholder="Nueva Categoría..." className="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 focus:border-white/30 text-sm text-white outline-none" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} /><button type="button" onClick={handleAddCategory} className={`p-3 rounded-xl text-white ${theme.bg} shadow hover:scale-105 transition-all`}><Plus size={18} /></button></div> : <select name="category" value={formData.category} onChange={handleInputChange} className="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white outline-none"><option value="" disabled>Selecciona...</option>{categories.map(c => <option key={c} value={c} className="bg-black text-white">{c}</option>)}</select>}
+                                        </div>
+                                        <div><label className="text-[10px] font-bold tracking-wider mb-1 block text-gray-400">TÍTULO / PREGUNTA</label><input name="question" value={formData.question} onChange={handleInputChange} placeholder="Ej: Canción favorita" className="w-full p-3 rounded-xl bg-black/30 border border-white/10 focus:border-white/30 text-white outline-none" required /></div>
                                         <div>
                                             <label className="text-[10px] font-bold tracking-wider mb-1 block text-gray-400">DETALLE</label>
                                             <div className="bg-black/20 border border-white/10 rounded-xl overflow-hidden focus-within:border-white/30 transition-colors">
-                                                <textarea ref={answerRef} name="answer" value={formData.answer} onChange={handleInputChange} className="w-full p-3 h-28 resize-none bg-transparent border-none focus:ring-0 text-sm leading-relaxed" required />
+                                                <div className="flex items-center gap-1 p-2 bg-white/5 border-b border-white/5">
+                                                    <button type="button" onClick={() => insertFormatting('**', '**')} className="p-1.5 text-gray-400 hover:text-white rounded hover:bg-white/10 transition-colors" title="Negrita"><BoldIcon size={14} /></button>
+                                                    <button type="button" onClick={() => insertFormatting('*', '*')} className="p-1.5 text-gray-400 hover:text-white rounded hover:bg-white/10 transition-colors" title="Cursiva"><ItalicIcon size={14} /></button>
+                                                    <div className="w-px h-4 bg-white/10 mx-1"></div>
+                                                    <button type="button" onClick={() => insertFormatting('❤️')} className="p-1.5 text-rose-400 hover:text-rose-300 rounded hover:bg-white/10 text-xs transition-colors" title="Corazón">❤️</button>
+                                                    <button type="button" onClick={() => insertFormatting('✨')} className="p-1.5 text-yellow-400 hover:text-yellow-300 rounded hover:bg-white/10 text-xs transition-colors" title="Brillos">✨</button>
+                                                </div>
+                                                <textarea ref={answerRef} name="answer" value={formData.answer} onChange={handleInputChange} placeholder="Escribe aquí..." className="w-full p-3 h-28 resize-none bg-transparent border-none focus:ring-0 text-sm leading-relaxed text-white outline-none" required />
                                             </div>
                                         </div>
-                                        <div className="flex gap-3 pt-4"><button type="submit" className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg ${theme.bg} ${theme.hover} transition-all active:scale-95`}>Guardar</button></div>
+                                        <div>
+                                            <label className="text-[10px] font-bold tracking-wider mb-1 flex items-center gap-1 text-gray-400"><ImageIcon size={12} /> IMAGEN (URL OPCIONAL)</label>
+                                            <input type="url" name="imageUrl" value={formData.imageUrl} onChange={handleInputChange} placeholder="https://ejemplo.com/foto.jpg" className="w-full p-3 rounded-xl bg-black/30 border border-white/10 focus:border-white/30 text-white text-sm outline-none" />
+                                        </div>
+                                        <div className="flex gap-3 pt-4">{editingId && <button type="button" onClick={handleCancelEdit} className="px-6 py-3 bg-white/5 text-gray-300 hover:text-white rounded-xl font-bold text-sm border border-white/10 active:scale-95 transition-all">Cancelar</button>}<button type="submit" className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg ${theme.bg} ${theme.hover} transition-all active:scale-95`}>{editingId ? 'Guardar' : 'Crear Recuerdo'}</button></div>
                                     </form>
                                 </div>
                             </div>
                             <div className="md:col-span-8 space-y-6 order-1 md:order-2">
+                                {/* ORACULO CARD */}
+                                <div className={`glass-panel p-6 md:p-8 rounded-3xl shadow-xl relative overflow-hidden border border-white/10 flex flex-col md:flex-row items-center gap-6`}>
+                                    <div className="flex-1 w-full">
+                                        <h2 className={`text-2xl font-bold mb-3 flex gap-3 ${theme.accent} items-center`}><Sparkles size={24} /> Oráculo de {activeProfile === 'novia' ? 'Flor' : 'Terequito'}</h2>
+                                        <p className="text-gray-400 text-sm mb-6 leading-relaxed opacity-90">Pregunta lo que quieras. La IA analizará todos los recuerdos guardados para darte la mejor respuesta.</p>
+                                        <form onSubmit={handleAskAI} className="flex gap-2 w-full">
+                                            <input value={aiQuery} onChange={e => setAiQuery(e.target.value)} placeholder={`Ej: ¿Qué le puedo regalar?`} className="flex-1 p-3 md:p-4 rounded-2xl text-white bg-black/30 border border-white/10 placeholder-gray-500 focus:bg-black/40 transition-all shadow-inner text-sm outline-none w-full" />
+                                            <button type="submit" disabled={isAiThinking} className="bg-white text-gray-900 px-4 md:px-6 rounded-2xl font-bold shadow-lg hover:bg-gray-100 hover:scale-105 transition-all flex items-center justify-center min-w-[60px]">{isAiThinking ? <div className="spinner border-gray-900" /> : 'Ir'}</button>
+                                        </form>
+                                        {aiResponse && <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="mt-6 bg-black/20 p-5 rounded-2xl backdrop-blur-md border border-white/10 text-white text-sm leading-relaxed shadow-inner markdown-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(aiResponse) }} />}
+                                    </div>
+                                    <div className={`hidden md:flex items-center justify-center p-6 rounded-full bg-white/5 border border-white/5 ${theme.glow} animate-pulse`}>
+                                        <Sparkles size={60} className={theme.accent} strokeWidth={1} />
+                                    </div>
+                                </div>
+
+                                {/* CATEGORY CHIPS */}
+                                <div className="flex overflow-x-auto hide-scroll gap-2 pb-2">
+                                    <button onClick={() => setActiveCategoryFilter('Todas')} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border border-transparent ${activeCategoryFilter === 'Todas' ? `${theme.bg} text-white shadow-lg` : 'bg-black/30 text-gray-400 hover:text-white border-white/5'}`}>Todas</button>
+                                    {categories.map(c => {
+                                        const count = entries.filter(e => e.target === activeProfile && e.category === c).length;
+                                        if (count === 0) return null;
+                                        return <button key={c} onClick={() => setActiveCategoryFilter(c)} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${activeCategoryFilter === c ? `${theme.bg} text-white shadow-lg border-transparent` : 'bg-black/20 text-gray-400 hover:text-white border-white/5'}`}>{c} <span className="opacity-60 ml-1 text-[10px]">{count}</span></button>
+                                    })}
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-3.5 rounded-2xl glass-panel ${theme.accent}`}><Search size={20} /></div>
+                                    <input type="text" placeholder={`Buscar en recuerdos de ${activeProfile === 'novia' ? 'Flor' : 'Terequito'}...`} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-3.5 px-5 rounded-2xl glass-panel text-white focus:ring-1 focus:ring-white/20 outline-none" />
+                                </div>
+
                                 <div className="grid gap-4">
                                     <AnimatePresence>
                                         {filteredEntries.slice(0, visibleEntriesCount).map((e, idx) => (
                                             <motion.div
                                                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: idx * 0.05 }}
-                                                key={e.id} className={`glass-panel p-5 rounded-2xl relative group transition-colors hover:bg-white/5`}
+                                                key={e.id} className={`glass-panel p-5 rounded-2xl relative group transition-colors hover:bg-white/5 ${editingId === e.id ? `ring-1 ${theme.accent}` : ''}`}
                                             >
+                                                <span className={`text-[10px] font-bold px-3 py-1 rounded-full bg-white/5 border border-white/10 uppercase ${theme.accent}`}>{e.category}</span>
                                                 <h3 className="font-bold text-lg mt-3 text-white">{e.question}</h3>
                                                 <div className="text-gray-300 mt-2 text-sm leading-relaxed font-light markdown-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(e.answer) }}></div>
+
+                                                {e.imageUrl && (
+                                                    <div className="mt-3 rounded-xl overflow-hidden border border-white/10 max-h-64 flex justify-center bg-black/50">
+                                                        <img src={e.imageUrl} alt="Recuerdo" className="object-contain max-h-64" onError={(imgE) => { imgE.target.style.display = 'none' }} />
+                                                    </div>
+                                                )}
+
                                                 <div className="mt-4 flex justify-between items-center pt-3 border-t border-white/5">
                                                     <span className="text-[10px] text-gray-500 font-mono">{e.date}</span>
-                                                    <div className="flex gap-2"><button onClick={() => setDeleteModal({ isOpen: true, id: e.id, type: 'wiki' })} className="p-2 text-gray-400 hover:text-red-400 bg-white/5 rounded-lg"><Trash2 size={16} /></button></div>
+                                                    <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => handleEdit(e)} className="p-2 text-gray-400 hover:text-blue-400 bg-white/5 rounded-lg"><Edit2 size={16} /></button>
+                                                        <button onClick={() => setDeleteModal({ isOpen: true, id: e.id, type: 'wiki' })} className="p-2 text-gray-400 hover:text-red-400 bg-white/5 rounded-lg"><Trash2 size={16} /></button>
+                                                    </div>
                                                 </div>
                                             </motion.div>
                                         ))}
                                     </AnimatePresence>
+
+                                    {filteredEntries.length === 0 && <div className="text-center py-12 text-gray-500 bg-black/20 rounded-2xl border border-white/5">No hay recuerdos aquí aún.</div>}
+                                    {filteredEntries.length > visibleEntriesCount && (
+                                        <button onClick={() => setVisibleEntriesCount(prev => prev + 15)} className="w-full py-4 text-sm font-bold text-gray-400 hover:text-white glass-panel rounded-2xl transition-colors">Cargar más 👇</button>
+                                    )}
                                 </div>
                             </div>
                         </div>
