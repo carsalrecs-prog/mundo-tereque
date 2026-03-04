@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mundo-tereque-v2';
+const CACHE_NAME = 'mundo-tereque-v3';
 const urlsToCache = [
   '/',
   '/index.html',
