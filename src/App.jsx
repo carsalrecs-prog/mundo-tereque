@@ -10,9 +10,11 @@ import {
     Italic as ItalicIcon, GitCommit, Settings as SettingsIcon,
     Upload, LogOut, Camera, Link as LinkIcon
 } from 'lucide-react';
+import { GoogleGenAI } from '@google/genai';
 
 const GEMINI_MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3.0-flash", "gemini-flash-latest"];
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDkSAqtXh2MdpEou7XQPJxuEKw3eCL1m6g";
+const ai = new GoogleGenAI({ apiKey });
 
 // --- IMAGE COMPRESSION UTILITY ---
 const compressImage = (file, maxWidth = 1200, quality = 0.7) => new Promise((resolve) => {
@@ -331,14 +333,15 @@ export default function App() {
     const fetchAI = async (prompt) => {
         for (const model of GEMINI_MODELS_TO_TRY) {
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                const response = await ai.models.generateContent({
+                    model: model,
+                    contents: prompt,
                 });
-                const d = await res.json();
-                if (d.error) continue;
-                return d.candidates?.[0]?.content?.parts?.[0]?.text || "La IA no respondió.";
-            } catch (e) { continue; }
+                if (response && response.text) return response.text;
+            } catch (e) {
+                console.error(`Error con modelo ${model}:`, e);
+                continue;
+            }
         }
         return `⚠️ Fallo de IA`;
     };
