@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <title>Nuestra Wiki de Amor ❤️</title>
+    <!-- React & Tailwind -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+
+    <!-- Markdown Renderer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Fuente Moderna -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Permanent+Marker&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            transition: background 0.8s ease, color 0.5s ease;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #03050d;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* Glassmorphism Moderno - Ajustado a estilo SaaS Alta Gama */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(10, 17, 40, 0.4) 0%, rgba(10, 17, 40, 0.1) 100%);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+
+        .glass-panel:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 40px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        input,
+        textarea,
+        select {
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: #f8fafc !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            background-color: rgba(255, 255, 255, 0.06) !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #64748b !important;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            border-top-color: currentColor;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .markdown-body p {
+            margin-bottom: 0.8em;
+        }
+
+        .markdown-body img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+
+        @keyframes celebrate {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+            }
+
+            50% {
+                transform: scale(1.02);
+                box-shadow: 0 10px 30px -5px rgba(255, 255, 255, 0.1);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+            }
+        }
+
+        .celebration-card {
+            animation: celebrate 3s infinite ease-in-out;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-10vh) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .confetti {
+            position: fixed;
+            font-size: 24px;
+            animation: fall linear infinite;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .font-handwriting {
+            font-family: 'Permanent Marker', cursive;
+        }
+
+        .post-it-bg {
+            background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+        }
+
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // ==========================================
+        // ⚙️ CONFIGURACIÓN FIREBASE Y GEMINI ⚙️
+        // ==========================================
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDDmi87GxpzBS5xDRC7qLQUN3hGptQQ70g",
+            authDomain: "mundo-tereque.firebaseapp.com",
+            projectId: "mundo-tereque",
+            storageBucket: "mundo-tereque.firebasestorage.app",
+            messagingSenderId: "498391783858",
+            appId: "1:498391783858:web:791e21eac76dbeafee2cab",
+            measurementId: "G-58HLHF8FTJ"
+        };
+
+        // Estos son los modelos 100% oficiales y funcionales de Google
+        const GEMINI_MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3.0-flash", "gemini-flash-latest", "gemini-flash-lite-latest"];
+        const apiKey = "AIzaSyATKMJQ-dfMG0_adq51eIDBswnH1twdlqM";
+
+        if (!firebase.apps.length) {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                firebase.firestore().enablePersistence().catch(err => console.log("Persistencia:", err.code));
+            } catch (e) { console.error("Error Firebase", e); }
+        }
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const getBaseRef = () => db;
+
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONOS ---
+        const IconBase = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+        const Heart = (p) => <IconBase {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></IconBase>;
+        const Download = (p) => <IconBase {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></IconBase>;
+        const Trash2 = (p) => <IconBase {...p}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></IconBase>;
+        const Edit2 = (p) => <IconBase {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></IconBase>;
+        const Search = (p) => <IconBase {...p}><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /></IconBase>;
+        const User = (p) => <IconBase {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></IconBase>;
+        const Plus = (p) => <IconBase {...p}><line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" /></IconBase>;
+        const X = (p) => <IconBase {...p}><line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" /></IconBase>;
+        const Sparkles = (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4" /><path d="M9 3v4" /><path d="M3 5h4" /><path d="M3 9h4" /></IconBase>;
+        const Check = (p) => <IconBase {...p}><polyline points="20 6 9 17 4 12" /></IconBase>;
+        const Dice = (p) => <IconBase {...p}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><circle cx="15" cy="15" r="2"></circle></IconBase>;
+        const CalendarIcon = (p) => <IconBase {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></IconBase>;
+        const Clock = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></IconBase>;
+        const Repeat = (p) => <IconBase {...p}><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></IconBase>;
+        const ImageIcon = (p) => <IconBase {...p}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></IconBase>;
+        const BoldIcon = (p) => <IconBase {...p}><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" /><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" /></IconBase>;
+        const ItalicIcon = (p) => <IconBase {...p}><line x1="19" y1="4" x2="10" y2="4" /><line x1="14" y1="20" x2="5" y2="20" /><line x1="15" y1="4" x2="9" y2="20" /></IconBase>;
+        const GitCommit = (p) => <IconBase {...p}><circle cx="12" cy="12" r="4" /><line x1="1.05" y1="12" x2="8" y2="12" /><line x1="16" y1="12" x2="22.95" y2="12" /></IconBase>;
+        const SettingsIcon = (p) => <IconBase {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></IconBase>;
+
+        // --- COMPONENTES AUXILIARES ---
+        const Toast = ({ message, type = 'success', onClose }) => {
+            useEffect(() => { const timer = setTimeout(onClose, 4000); return () => clearTimeout(timer); }, [onClose]);
+            const bgClass = type === 'success' ? 'bg-green-900/80 border-green-500 text-green-100' : type === 'error' ? 'bg-red-900/80 border-red-500 text-red-100' : 'bg-blue-900/80 border-blue-500 text-blue-100';
+            return (<div className={`fixed top-4 md:bottom-4 md:top-auto right-4 left-4 md:left-auto ${bgClass} border px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 toast-enter z-[100] backdrop-blur`}><Check size={18} /><span className="font-bold">{message}</span></div>);
+        };
+
+        const ConfirmationModal = ({ isOpen, onClose, onConfirm, message }) => {
+            if (!isOpen) return null;
+            return (<div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] fade-in p-4"><div className="glass-panel p-8 rounded-3xl shadow-2xl max-w-sm w-full"><h3 className="text-xl font-bold text-white mb-4">¿Estás seguro?</h3><p className="text-gray-400 mb-8 text-sm">{message}</p><div className="flex gap-3 justify-end"><button onClick={onClose} className="px-5 py-2.5 rounded-xl text-gray-300 hover:bg-white/5 font-bold transition-colors text-sm">Cancelar</button><button onClick={onConfirm} className="px-5 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-bold shadow-lg transition-colors text-sm">Sí, confirmar</button></div></div></div>);
+        };
+
+        const Confetti = () => {
+            const emojis = ['❤️', '✨', '🎉', '💖'];
+            const pieces = Array.from({ length: 40 }).map((_, i) => ({
+                id: i, emoji: emojis[Math.floor(Math.random() * emojis.length)],
+                left: `${Math.random() * 100}vw`, animationDuration: `${Math.random() * 3 + 2}s`, animationDelay: `${Math.random() * 2}s`, fontSize: `${Math.random() * 15 + 15}px`
+            }));
+            return (<div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">{pieces.map(p => <div key={p.id} className="confetti" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, fontSize: p.fontSize }}>{p.emoji}</div>)}</div>);
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [activeProfile, setActiveProfile] = useState('novia');
+            const [viewMode, setViewMode] = useState('wiki');
+
+            // Datos
+            const [entries, setEntries] = useState([]);
+            const [categories, setCategories] = useState(['Básica', 'Gustos', 'Difícil / Profunda', 'Familia', 'Historia', 'Curiosidad']);
+            const [pendingGames, setPendingGames] = useState([]);
+            const [datesList, setDatesList] = useState([]);
+            const [relationshipStart, setRelationshipStart] = useState(null);
+            const [postItText, setPostItText] = useState("¡Que tengas un día hermoso! ❤️");
+            const [isEditingPostIt, setIsEditingPostIt] = useState(false);
+
+            // UI States
+            const [formData, setFormData] = useState({ category: '', question: '', answer: '', imageUrl: '' });
+            const [searchTerm, setSearchTerm] = useState('');
+            const [activeCategoryFilter, setActiveCategoryFilter] = useState('Todas');
+            const [isAddingCategory, setIsAddingCategory] = useState(false);
+            const [newCategoryName, setNewCategoryName] = useState('');
+            const [editingId, setEditingId] = useState(null);
+            const [toast, setToast] = useState(null);
+            const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, type: null });
+            const [showSettings, setShowSettings] = useState(false);
+            const [showConfetti, setShowConfetti] = useState(false);
+            const [visibleEntriesCount, setVisibleEntriesCount] = useState(15);
+
+            // AI States
+            const [aiQuery, setAiQuery] = useState('');
+            const [aiResponse, setAiResponse] = useState('');
+            const [isAiThinking, setIsAiThinking] = useState(false);
+
+            // Game States
+            const [gameQuestion, setGameQuestion] = useState('');
+            const [isGeneratingGame, setIsGeneratingGame] = useState(false);
+            const [answerFlor, setAnswerFlor] = useState('');
+            const [answerTereque, setAnswerTereque] = useState('');
+            const [pendingAnswers, setPendingAnswers] = useState({});
+
+            // Date States
+            const [newDateTitle, setNewDateTitle] = useState('');
+            const [newDateValue, setNewDateValue] = useState('');
+            const [newDateRepeats, setNewDateRepeats] = useState(true);
+            const [showDateInput, setShowDateInput] = useState(false);
+            const [editingDateId, setEditingDateId] = useState(null);
+
+            const answerRef = useRef(null);
+
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        try {
+                            const redirectResult = await auth.getRedirectResult();
+                            if (redirectResult && redirectResult.user) {
+                                showToast("¡Cuenta vinculada con éxito!", "success");
+                            }
+                        } catch (redirectError) {
+                            console.warn("Redirección ignorada (entorno local).");
+                        }
+
+                        if (!auth.currentUser) {
+                            await auth.signInAnonymously();
+                        }
+                    } catch (error) {
+                        console.error("Auth Error:", error);
+                        showToast("Iniciando modo offline temporal.", 'info');
+                    }
+                };
+                initAuth();
+                const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                if (!user) return;
+
+                const wikiRef = getBaseRef().collection('wiki_entries');
+                const unsubWiki = wikiRef.onSnapshot((snapshot) => {
+                    const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
+                    setEntries(loaded);
+                }, (error) => console.error("Error wiki:", error));
+
+                const pendingRef = getBaseRef().collection('pending_games');
+                const unsubPend = pendingRef.onSnapshot((snapshot) => {
+                    const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
+                    setPendingGames(loaded);
+                }, (error) => console.error("Error games:", error));
+
+                const datesRef = getBaseRef().collection('important_dates');
+                const unsubDates = datesRef.onSnapshot((snapshot) => {
+                    const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setDatesList(loaded);
+                    checkUpcomingDates(loaded);
+                }, (error) => console.error("Error dates:", error));
+
+                const settingsRef = getBaseRef().collection('settings');
+                const unsubRel = settingsRef.doc('relationship').onSnapshot(doc => { if (doc.exists) setRelationshipStart(doc.data().date); }, (error) => console.error(error));
+                const unsubCat = settingsRef.doc('categories').onSnapshot(doc => { if (doc.exists) setCategories(doc.data().list || ['Básica']); }, (error) => console.error(error));
+                const unsubPostit = settingsRef.doc('postit').onSnapshot(doc => { if (doc.exists) setPostItText(doc.data().text || "¡Que tengas un día hermoso! ❤️"); }, (error) => console.error(error));
+
+                return () => { unsubWiki(); unsubPend(); unsubDates(); unsubRel(); unsubCat(); unsubPostit(); };
+            }, [user]);
+
+            const showToast = (message, type = 'success') => { setToast({ message, type }); };
+
+            useEffect(() => { if (!formData.category && categories.length > 0) setFormData(prev => ({ ...prev, category: categories[0] })); }, [categories]);
+
+            useEffect(() => {
+                if (activeProfile === 'novia') document.body.style.background = "radial-gradient(ellipse at top, #4a0404 0%, #0a0000 100%)";
+                else document.body.style.background = "radial-gradient(ellipse at top, #0f172a 0%, #020617 100%)";
+                setEditingId(null);
+                setFormData(prev => ({ category: categories[0], question: '', answer: '', imageUrl: '' }));
+                setEditingDateId(null); setNewDateTitle(''); setNewDateValue(''); setNewDateRepeats(true);
+                setVisibleEntriesCount(15);
+                setAiQuery(''); setAiResponse('');
+            }, [activeProfile, viewMode]);
+
+            // --- WIKI LOGIC ---
+            const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+            const insertFormatting = (prefix, suffix = '') => {
+                const textarea = answerRef.current;
+                if (!textarea) return;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentText = formData.answer;
+                const before = currentText.substring(0, start);
+                const selection = currentText.substring(start, end);
+                const after = currentText.substring(end);
+
+                const newText = before + prefix + selection + suffix + after;
+                setFormData(prev => ({ ...prev, answer: newText }));
+                setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + prefix.length, start + prefix.length + selection.length); }, 0);
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!user) return showToast("Conectando...", 'error');
+                const data = { target: activeProfile, category: formData.category, question: formData.question, answer: formData.answer, imageUrl: formData.imageUrl || null, date: new Date().toLocaleDateString(), timestamp: Date.now() };
+                try {
+                    if (editingId) { await getBaseRef().collection('wiki_entries').doc(editingId).update(data); showToast("Actualizado ✨"); setEditingId(null); }
+                    else { await getBaseRef().collection('wiki_entries').add(data); showToast("Guardado ❤️"); }
+                    setFormData(prev => ({ ...prev, question: '', answer: '', imageUrl: '' }));
+                } catch (err) { showToast("Error al guardar", 'error'); }
+            };
+
+            const handleEdit = (e) => { setEditingId(e.id); setFormData({ category: e.category, question: e.question, answer: e.answer, imageUrl: e.imageUrl || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }); showToast("Editando...", 'info'); };
+            const handleCancelEdit = () => { setEditingId(null); setFormData(prev => ({ ...prev, question: '', answer: '', imageUrl: '' })); };
+
+            const confirmDelete = async () => {
+                const { id, type } = deleteModal;
+                if (!id) return;
+                try {
+                    if (type === 'wiki') { await getBaseRef().collection('wiki_entries').doc(id).delete(); if (editingId === id) handleCancelEdit(); showToast("Eliminado 🗑️"); }
+                    else if (type === 'game_skip') { await getBaseRef().collection('pending_games').doc(id).delete(); showToast("Descartado"); }
+                    else if (type === 'date') { await getBaseRef().collection('important_dates').doc(id).delete(); showToast("Fecha eliminada"); }
+                } catch (e) { showToast("Error", "error"); }
+                setDeleteModal({ isOpen: false, id: null, type: null });
+            };
+
+            const handleAddCategory = async () => {
+                if (newCategoryName.trim() && !categories.includes(newCategoryName)) {
+                    const newCats = [...categories, newCategoryName];
+                    await getBaseRef().collection('settings').doc('categories').set({ list: newCats });
+                    setFormData(prev => ({ ...prev, category: newCategoryName })); setNewCategoryName(''); setIsAddingCategory(false);
+                }
+            };
+
+            // --- JUEGOS Y AI ---
+            const fetchAI = async (prompt) => {
+                if (!apiKey || !apiKey.startsWith("AIza")) return "⚠️ Llave API inválida";
+
+                let lastError = "Error desconocido";
+
+                for (const model of GEMINI_MODELS_TO_TRY) {
+                    try {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+                        const d = await res.json();
+                        if (d.error) {
+                            lastError = d.error.message;
+                            console.warn(`Modelo ${model} falló:`, d.error.message);
+                            continue; // Intentar el siguiente modelo
+                        }
+                        return d.candidates?.[0]?.content?.parts?.[0]?.text || "La IA no respondió.";
+                    } catch (e) {
+                        console.error(`Error de red con ${model}:`, e);
+                        lastError = e.message;
+                        continue;
+                    }
+                }
+                return `⚠️ Fallo de IA: Todos los modelos intentados fallaron. Último error: ${lastError}`;
+            };
+
+            const handleAskAI = async (e) => {
+                e.preventDefault();
+                if (!aiQuery.trim()) return;
+                setIsAiThinking(true);
+                const context = entries.filter(x => x.target === activeProfile).map(x => `- ${x.category}: P:${x.question} R:${x.answer}`).join("\n");
+                const resp = await fetchAI(`Eres un experto en la relación y gustos de ${activeProfile === 'novia' ? 'Flor' : 'Terequito'}. Basado estrictamente en estos datos: ${context}. Responde a esta pregunta: ${aiQuery}. Sé breve, romántico y cariñoso.`);
+                setAiResponse(resp);
+                setIsAiThinking(false);
+            };
+
+            const handleGenerateGameQuestion = async () => {
+                setIsGeneratingGame(true); setGameQuestion(''); setAnswerFlor(''); setAnswerTereque('');
+                const q = await fetchAI("Genera una sola pregunta profunda, romántica o divertida para parejas (Flor y Terequito) para conocerse mejor. Escribe únicamente la pregunta directamente, sin intros ni comillas.");
+                setGameQuestion(q); setIsGeneratingGame(false);
+            };
+
+            const handleSaveActiveGame = async () => {
+                if (!gameQuestion) return;
+                const hF = !!answerFlor.trim(), hT = !!answerTereque.trim();
+                if (!hF && !hT) return showToast("Escribe algo", 'error');
+                if (hF && hT) {
+                    await getBaseRef().collection('wiki_entries').add({ target: 'novia', category: 'Juego AI 🎲', question: gameQuestion, answer: answerFlor, date: new Date().toLocaleDateString(), timestamp: Date.now() });
+                    await getBaseRef().collection('wiki_entries').add({ target: 'novio', category: 'Juego AI 🎲', question: gameQuestion, answer: answerTereque, date: new Date().toLocaleDateString(), timestamp: Date.now() + 1 });
+                    showToast("¡Completado! 🎉"); setGameQuestion(''); setAnswerFlor(''); setAnswerTereque('');
+                } else {
+                    await getBaseRef().collection('pending_games').add({ question: gameQuestion, answerFlor, answerTereque, timestamp: Date.now() });
+                    showToast("Guardado en pendientes ⏳"); setGameQuestion(''); setAnswerFlor(''); setAnswerTereque('');
+                }
+            };
+
+            const handleCompletePendingGame = async (game) => {
+                const nF = pendingAnswers[`${game.id}_flor`] || game.answerFlor || '';
+                const nT = pendingAnswers[`${game.id}_tereque`] || game.answerTereque || '';
+                if (!nF.trim() || !nT.trim()) return;
+                await getBaseRef().collection('wiki_entries').add({ target: 'novia', category: 'Juego AI 🎲', question: game.question, answer: nF, date: new Date().toLocaleDateString(), timestamp: Date.now() });
+                await getBaseRef().collection('wiki_entries').add({ target: 'novio', category: 'Juego AI 🎲', question: game.question, answer: nT, date: new Date().toLocaleDateString(), timestamp: Date.now() + 1 });
+                await getBaseRef().collection('pending_games').doc(game.id).delete();
+                showToast("¡Turno completado! 🎉");
+            };
+
+            // --- FECHAS Y TIMELINE ---
+            const handleSaveDate = async (e) => {
+                e.preventDefault();
+                if (!newDateTitle || !newDateValue) return;
+                try {
+                    if (editingDateId) { await getBaseRef().collection('important_dates').doc(editingDateId).update({ title: newDateTitle, date: newDateValue, repeats: newDateRepeats }); showToast("Fecha actualizada ✨"); setEditingDateId(null); }
+                    else { await getBaseRef().collection('important_dates').add({ title: newDateTitle, date: newDateValue, repeats: newDateRepeats, timestamp: Date.now() }); showToast("Fecha guardada 📅"); }
+                    setNewDateTitle(''); setNewDateValue(''); setNewDateRepeats(true);
+                } catch (error) { showToast("Error al guardar", 'error'); }
+            };
+
+            const getDaysUntil = (dateObjOrString) => {
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const dateString = typeof dateObjOrString === 'string' ? dateObjOrString : dateObjOrString.date;
+                const repeats = typeof dateObjOrString === 'string' ? true : (dateObjOrString.repeats !== false);
+                const [y, m, d] = dateString.split('-').map(Number);
+                if (repeats) {
+                    let target = new Date(today.getFullYear(), m - 1, d);
+                    if (target < today) target.setFullYear(today.getFullYear() + 1);
+                    return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+                } else {
+                    let target = new Date(y, m - 1, d);
+                    return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+                }
+            };
+
+            const calculateDuration = (dateString) => {
+                if (!dateString) return { years: 0, months: 0, days: 0 };
+                const [y, m, d] = dateString.split('-').map(Number);
+                const start = new Date(y, m - 1, d);
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                let years = now.getFullYear() - start.getFullYear();
+                let months = now.getMonth() - start.getMonth();
+                let days = now.getDate() - start.getDate();
+                if (days < 0) { months--; days += new Date(now.getFullYear(), now.getMonth(), 0).getDate(); }
+                if (months < 0) { years--; months += 12; }
+                return { years, months, days };
+            };
+
+            const checkUpcomingDates = (dates) => {
+                const upcoming = dates.filter(d => { const days = getDaysUntil(d); return days >= 0 && days <= 3; });
+                if (upcoming.some(d => getDaysUntil(d) === 0)) setShowConfetti(true);
+                else setShowConfetti(false);
+            };
+
+            const getTimelineData = () => {
+                const timeline = [];
+                if (relationshipStart) timeline.push({ id: 'start', type: 'start', title: 'Inicio de la Historia', date: relationshipStart, sortDate: new Date(relationshipStart).getTime() });
+                datesList.forEach(d => { timeline.push({ ...d, type: 'date', sortDate: new Date(d.date).getTime() }); });
+                entries.forEach(e => { if (e.timestamp) timeline.push({ ...e, type: 'wiki', title: e.question, sortDate: e.timestamp }); });
+                return timeline.sort((a, b) => b.sortDate - a.sortDate);
+            };
+
+            // --- CUENTA Y RESPALDOS ---
+            const handleBackup = () => {
+                const data = { wiki: entries, games: pendingGames, dates: datesList, relationshipStart };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "wiki_amor_respaldo.json"; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                showToast("Respaldo descargado");
+            };
+
+            const handleGoogleLink = async () => {
+                if (!auth.currentUser) {
+                    showToast("Espera a que cargue la aplicación primero.", "error");
+                    return;
+                }
+                try {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    const result = await auth.currentUser.linkWithPopup(provider);
+                    if (result && result.user) {
+                        showToast("¡Cuenta vinculada con éxito!", "success");
+                        setShowSettings(false);
+                    }
+                } catch (e) {
+                    console.error("Error al vincular:", e);
+                    if (e.code === 'auth/unauthorized-domain') {
+                        showToast(`Agrega el dominio en Firebase > Authentication > Settings > Authorized domains.`, "error");
+                    } else if (e.code === 'auth/credential-already-in-use') {
+                        showToast("Esta cuenta de Google ya está vinculada a otro usuario.", "error");
+                    } else if (e.code === 'auth/popup-blocked') {
+                        showToast("Ventana bloqueada. Permite las ventanas emergentes en tu navegador.", "error");
+                    } else if (e.code === 'auth/popup-closed-by-user') {
+                        // Silenciar error
+                    } else {
+                        showToast("Error al vincular. Usa el botón de respaldo manual.", "error");
+                    }
+                }
+            };
+
+            const savePostIt = async (e) => {
+                const text = e.target.innerText;
+                setPostItText(text);
+                await getBaseRef().collection('settings').doc('postit').set({ text });
+                setIsEditingPostIt(false);
+                showToast("Nota guardada");
+            };
+
+            // Filtrado de Wiki
+            const filteredEntries = entries.filter(e => {
+                if (e.target !== activeProfile) return false;
+                if (activeCategoryFilter !== 'Todas' && e.category !== activeCategoryFilter) return false;
+                if (searchTerm && !e.question.toLowerCase().includes(searchTerm.toLowerCase()) && !e.answer.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+                return true;
+            });
+
+            // Función segura para parsear Markdown
+            const renderMarkdown = (text) => {
+                try { return marked.parse(text || ''); } catch (e) { return text; }
+            };
+
+            if (!user) return <div className="min-h-screen flex flex-col items-center justify-center text-gray-400"><div className="spinner border-rose-500 mb-4"></div>Conectando a tu Nube...</div>;
+
+            const theme = activeProfile === 'novia'
+                ? { accent: 'text-rose-500', bg: 'bg-rose-900', hover: 'hover:bg-rose-800', border: 'border-rose-900/50', glow: 'shadow-[0_0_25px_rgba(225,29,72,0.3)]' }
+                : { accent: 'text-sky-500', bg: 'bg-sky-900', hover: 'hover:bg-sky-800', border: 'border-sky-900/50', glow: 'shadow-[0_0_25px_rgba(14,165,233,0.3)]' };
+
+            return (
+                <div className="p-4 md:p-8 max-w-5xl mx-auto">
+                    {showConfetti && <Confetti />}
+                    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+                    <ConfirmationModal isOpen={deleteModal.isOpen} onClose={() => setDeleteModal({ isOpen: false })} onConfirm={confirmDelete} message="Esta acción no se puede deshacer." />
+
+                    {/* SETTINGS MODAL */}
+                    {showSettings && (
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 fade-in">
+                            <div className="glass-panel p-8 rounded-3xl max-w-md w-full" style={{ backgroundColor: '#0f172a' }}>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-2xl font-bold text-white flex items-center gap-3"><SettingsIcon /> Cuenta & Respaldo</h3>
+                                    <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-white"><X size={24} /></button>
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-sm text-gray-300 leading-relaxed">
+                                        Tus datos ya están guardados en la <b>Nube</b> automáticamente. Sin embargo, como usas una cuenta de invitado, podrías perder acceso si limpias el navegador o cambias de dispositivo.
+                                    </div>
+                                    <button onClick={handleBackup} className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold transition-all shadow-lg">
+                                        <Download size={20} /> Descargar Respaldo Total
+                                    </button>
+                                    <div className="text-center text-gray-500 text-sm">o</div>
+                                    <button onClick={handleGoogleLink} className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 hover:bg-gray-200 p-4 rounded-xl font-bold transition-all shadow-lg">
+                                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" /> Vincular con Google
+                                    </button>
+                                    <p className="text-[10px] text-gray-500 text-center mt-2">
+                                        Nota: Para que el inicio de sesión con Google funcione, asegúrate de que el dominio actual ({window.location.hostname || 'archivo local'}) esté agregado en Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DESKTOP HEADER */}
+                    <header className="hidden md:flex mb-8 glass-panel p-3 rounded-3xl flex-wrap justify-between gap-4 sticky top-4 z-50 bg-[#0f172a]/80 backdrop-blur-xl">
+                        <div className="flex gap-2 items-center">
+                            <button onClick={() => setViewMode('wiki')} className={`px-4 py-2 rounded-xl font-bold flex gap-2 transition-all ${viewMode === 'wiki' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}><Search size={20} /> Wiki</button>
+                            <button onClick={() => setViewMode('game')} className={`px-4 py-2 rounded-xl font-bold flex gap-2 transition-all ${viewMode === 'game' ? 'bg-purple-900/50 text-purple-200 shadow-lg border border-purple-500/30' : 'text-gray-500 hover:text-gray-300'}`}><Dice size={20} /> Juego {pendingGames.length > 0 && <span className="bg-red-600 text-white text-xs px-1.5 rounded-full ml-1">{pendingGames.length}</span>}</button>
+                            <button onClick={() => setViewMode('dates')} className={`px-4 py-2 rounded-xl font-bold flex gap-2 transition-all ${viewMode === 'dates' ? 'bg-orange-900/50 text-orange-200 shadow-lg border border-orange-500/30' : 'text-gray-500 hover:text-gray-300'}`}><CalendarIcon size={20} /> Fechas</button>
+                            <button onClick={() => setViewMode('timeline')} className={`px-4 py-2 rounded-xl font-bold flex gap-2 transition-all ${viewMode === 'timeline' ? 'bg-green-900/50 text-green-200 shadow-lg border border-green-500/30' : 'text-gray-500 hover:text-gray-300'}`}><GitCommit size={20} /> Historia</button>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            {viewMode === 'wiki' && (
+                                <div className="flex bg-black/30 p-1 rounded-xl border border-white/5">
+                                    <button onClick={() => setActiveProfile('novia')} className={`px-4 py-1.5 rounded-lg font-bold flex gap-2 text-sm transition-all ${activeProfile === 'novia' ? 'bg-rose-900/80 text-white shadow-md' : 'text-gray-500 hover:text-gray-300'}`}><Heart size={14} className={activeProfile === 'novia' ? 'fill-current' : ''} /> Flor</button>
+                                    <button onClick={() => setActiveProfile('novio')} className={`px-4 py-1.5 rounded-lg font-bold flex gap-2 text-sm transition-all ${activeProfile === 'novio' ? 'bg-sky-900/80 text-white shadow-md' : 'text-gray-500 hover:text-gray-300'}`}><User size={14} className={activeProfile === 'novio' ? 'fill-current' : ''} /> Terequito</button>
+                                </div>
+                            )}
+                            <button onClick={() => setShowSettings(true)} className="p-2 text-gray-500 hover:text-white transition-colors" title="Cuenta & Respaldo"><SettingsIcon size={22} /></button>
+                        </div>
+                    </header>
+
+                    {/* MOBILE BOTTOM NAV */}
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-xl border-t border-white/10 p-3 px-6 flex justify-between z-50 items-center pb-safe">
+                        <button onClick={() => setViewMode('wiki')} className={`flex flex-col items-center p-2 rounded-xl transition-all active:scale-95 ${viewMode === 'wiki' ? theme.accent : 'text-gray-400 hover:text-gray-300'}`}><Search size={24} /><span className="text-xs font-bold mt-1">Wiki</span></button>
+                        <button onClick={() => setViewMode('game')} className={`flex flex-col items-center p-2 rounded-xl relative transition-all active:scale-95 ${viewMode === 'game' ? 'text-purple-400' : 'text-gray-400 hover:text-gray-300'}`}><Dice size={24} />{pendingGames.length > 0 && <span className="absolute top-1 right-2 w-3 h-3 bg-red-500 rounded-full border border-gray-900 shadow-sm"></span>}<span className="text-xs font-bold mt-1">Juego</span></button>
+                        <button onClick={() => setViewMode('dates')} className={`flex flex-col items-center p-2 rounded-xl transition-all active:scale-95 ${viewMode === 'dates' ? 'text-orange-400' : 'text-gray-400 hover:text-gray-300'}`}><CalendarIcon size={24} /><span className="text-xs font-bold mt-1">Fechas</span></button>
+                        <button onClick={() => setViewMode('timeline')} className={`flex flex-col items-center p-2 rounded-xl transition-all active:scale-95 ${viewMode === 'timeline' ? 'text-green-400' : 'text-gray-400 hover:text-gray-300'}`}><GitCommit size={24} /><span className="text-xs font-bold mt-1">Historia</span></button>
+                    </nav>
+
+                    {/* MOBILE TOP HEADER & PROFILE SELECTOR */}
+                    <div className="md:hidden mb-6 flex flex-col gap-4">
+                        <header className="flex justify-between items-center glass-panel p-4 rounded-2xl sticky top-4 z-40 bg-[#0f172a]/90 backdrop-blur-xl border-b border-white/10 mx-2 shadow-lg">
+                            <div className="flex items-center gap-2">
+                                <Heart size={20} className={activeProfile === 'novia' ? 'text-rose-500 fill-current' : 'text-sky-500 fill-current'} />
+                                <h1 className="text-xl font-bold text-white tracking-tight">Mundo Tereque</h1>
+                            </div>
+                            <button onClick={() => setShowSettings(true)} className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-gray-300 hover:text-white transition-colors active:scale-95"><SettingsIcon size={20} /></button>
+                        </header>
+
+                        {viewMode === 'wiki' && (
+                            <div className="flex justify-center">
+                                <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+                                    <button onClick={() => setActiveProfile('novia')} className={`px-6 py-2 rounded-xl font-bold flex gap-2 text-sm transition-all active:scale-95 ${activeProfile === 'novia' ? 'bg-rose-900/90 text-white shadow-md' : 'text-gray-400'}`}><Heart size={16} className={activeProfile === 'novia' ? 'fill-current' : ''} /> Flor</button>
+                                    <button onClick={() => setActiveProfile('novio')} className={`px-6 py-2 rounded-xl font-bold flex gap-2 text-sm transition-all active:scale-95 ${activeProfile === 'novio' ? 'bg-sky-900/90 text-white shadow-md' : 'text-gray-400'}`}><User size={16} className={activeProfile === 'novio' ? 'fill-current' : ''} /> Terequito</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* POST-IT NOTE (Visible on Wiki & Dates) */}
+                    {(viewMode === 'wiki' || viewMode === 'dates') && (
+                        <div className="post-it-bg p-4 rounded-br-3xl rounded-tl-2xl shadow-xl transform rotate-1 hover:rotate-0 transition-all relative max-w-sm mx-auto mb-8 border border-yellow-400/50">
+                            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-12 h-6 bg-red-500/20 backdrop-blur-sm shadow-sm rounded-sm"></div>
+                            {isEditingPostIt ? (
+                                <div
+                                    contentEditable
+                                    suppressContentEditableWarning
+                                    onBlur={savePostIt}
+                                    className="font-handwriting text-xl text-yellow-900 outline-none min-h-[60px] leading-relaxed text-center p-2"
+                                    autoFocus
+                                >{postItText}</div>
+                            ) : (
+                                <div onClick={() => setIsEditingPostIt(true)} className="font-handwriting text-xl text-yellow-900 min-h-[60px] cursor-pointer flex items-center justify-center text-center leading-relaxed">
+                                    {postItText}
+                                </div>
+                            )}
+                            <span className="absolute bottom-2 right-3 text-[10px] text-yellow-700/50 font-sans uppercase font-bold">Nota del día</span>
+                        </div>
+                    )}
+
+                    {/* ============================================================== */}
+                    {/* TIMELINE VIEW */}
+                    {/* ============================================================== */}
+                    {viewMode === 'timeline' && (
+                        <div className="fade-in max-w-2xl mx-auto space-y-6">
+                            <h2 className="text-3xl font-bold mb-8 text-center text-green-200">Nuestra Línea de Tiempo</h2>
+                            <div className="relative border-l-2 border-white/20 pl-6 ml-4 space-y-8">
+                                {getTimelineData().map((item, idx) => (
+                                    <div key={idx} className="relative">
+                                        <div className={`absolute -left-[35px] w-6 h-6 rounded-full border-4 border-[#0f172a] flex items-center justify-center ${item.type === 'start' ? 'bg-red-500' : item.type === 'date' ? 'bg-orange-500' : 'bg-blue-500'}`}>
+                                            {item.type === 'start' && <Heart size={10} className="text-white fill-white" />}
+                                        </div>
+                                        <div className="glass-panel p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-all">
+                                            <span className="text-xs text-gray-400 font-bold tracking-wider mb-2 block">{item.date || new Date(item.timestamp).toLocaleDateString()}</span>
+                                            <h3 className={`font-bold text-lg mb-1 ${item.type === 'start' ? 'text-red-400' : item.type === 'date' ? 'text-orange-300' : 'text-white'}`}>{item.title}</h3>
+                                            {item.type === 'wiki' && <p className="text-sm text-gray-300 opacity-80 mt-2 line-clamp-2">{item.answer}</p>}
+                                            {item.type === 'date' && <p className="text-xs text-orange-400/80 mt-1 flex gap-1 items-center"><CalendarIcon size={12} /> Evento Anual</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ============================================================== */}
+                    {/* DATES VIEW */}
+                    {/* ============================================================== */}
+                    {viewMode === 'dates' && (
+                        <div className="fade-in max-w-3xl mx-auto space-y-8">
+                            <div className="glass-panel p-8 rounded-3xl shadow-xl border-t-2 border-orange-500 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 opacity-10 p-4"><Heart size={120} className="text-red-500" /></div>
+                                <h2 className="text-3xl font-bold text-orange-200 mb-6 flex items-center gap-3"><Heart className="text-red-500" /> Nuestra Historia</h2>
+                                {relationshipStart && !showDateInput ? (
+                                    <div className="space-y-6 relative z-10">
+                                        <div className="grid grid-cols-3 gap-4 text-center">
+                                            <div className="bg-white/5 p-4 rounded-2xl border border-white/10"><p className="text-3xl md:text-4xl font-bold text-white">{calculateDuration(relationshipStart).years}</p><p className="text-gray-400 text-xs uppercase tracking-wide font-bold">Años</p></div>
+                                            <div className="bg-white/5 p-4 rounded-2xl border border-white/10"><p className="text-3xl md:text-4xl font-bold text-white">{calculateDuration(relationshipStart).months}</p><p className="text-gray-400 text-xs uppercase tracking-wide font-bold">Meses</p></div>
+                                            <div className="bg-white/5 p-4 rounded-2xl border border-white/10"><p className="text-3xl md:text-4xl font-bold text-white">{calculateDuration(relationshipStart).days}</p><p className="text-gray-400 text-xs uppercase tracking-wide font-bold">Días</p></div>
+                                        </div>
+                                        <div className="bg-gradient-to-r from-red-900/80 to-orange-900/80 text-white p-4 rounded-xl flex justify-between items-center shadow-lg border border-red-800/50">
+                                            <div>
+                                                <p className="text-orange-200 text-xs md:text-sm uppercase font-bold">Próximo Aniversario</p>
+                                                <p className="font-bold md:text-lg text-white">Faltan {getDaysUntil({ date: relationshipStart, repeats: true })} días 🎉</p>
+                                            </div>
+                                            <button onClick={() => setShowDateInput(true)} className="text-orange-200 hover:text-white p-2 bg-black/20 rounded-lg"><Edit2 size={18} /></button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-4 relative z-10">
+                                        <p className="text-gray-300 mb-4">¿Cuándo comenzó su historia?</p>
+                                        <div className="flex gap-2 justify-center">
+                                            <input type="date" value={newDateValue} onChange={e => setNewDateValue(e.target.value)} className="p-3 border rounded-xl" />
+                                            <button onClick={async () => { if (newDateValue) { await getBaseRef().collection('settings').doc('relationship').set({ date: newDateValue }); setShowDateInput(false); } }} className="bg-orange-700 text-white px-6 py-3 rounded-xl font-bold shadow hover:bg-orange-600">Guardar</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="glass-panel p-6 md:p-8 rounded-3xl shadow-xl border-t-2 border-white/10">
+                                <h2 className="text-2xl font-bold mb-6 text-orange-200 flex gap-2 items-center"><CalendarIcon /> {editingDateId ? 'Editar Fecha' : 'Eventos Especiales'}</h2>
+                                <form onSubmit={handleSaveDate} className="flex flex-col gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
+                                    <div className="flex flex-col md:flex-row gap-4">
+                                        <input value={newDateTitle} onChange={e => setNewDateTitle(e.target.value)} placeholder="Título (ej: Viaje a París)" className="flex-1 p-3 rounded-xl" required />
+                                        <input type="date" value={newDateValue} onChange={e => setNewDateValue(e.target.value)} className="p-3 rounded-xl" required />
+                                    </div>
+                                    <div className="flex flex-wrap items-center justify-between bg-white/5 p-3 rounded-xl gap-4">
+                                        <label className="flex items-center gap-3 cursor-pointer">
+                                            <input type="checkbox" checked={newDateRepeats} onChange={e => setNewDateRepeats(e.target.checked)} className="w-5 h-5 rounded border-orange-500 text-orange-500 focus:ring-0" />
+                                            <span className="text-sm font-bold text-gray-300">Repetir cada año</span>
+                                        </label>
+                                        <div className="flex gap-3 flex-1 md:flex-none justify-end">
+                                            {editingDateId && <button type="button" onClick={() => { setEditingDateId(null); setNewDateTitle(''); setNewDateValue(''); }} className="text-gray-400 font-bold px-4">Cancelar</button>}
+                                            <button type="submit" className="bg-orange-700 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded-xl transition-colors">{editingDateId ? 'Actualizar' : 'Agregar'}</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div className="grid gap-4">
+                                {[...datesList].sort((a, b) => getDaysUntil(a) - getDaysUntil(b)).map(date => {
+                                    const days = getDaysUntil(date);
+                                    return (
+                                        <div key={date.id} className={`p-5 rounded-2xl shadow border-l-4 flex items-center justify-between transition-all ${days === 0 ? 'border-yellow-500 celebration-card bg-yellow-900/20' : days < 0 ? 'border-gray-700 bg-black/40 opacity-60' : 'border-white/10 bg-black/20'}`}>
+                                            <div>
+                                                <h3 className="font-bold text-lg text-white flex items-center gap-2">{date.title} {date.repeats !== false && <Repeat size={14} className="text-gray-500" />}</h3>
+                                                <p className="text-gray-400 text-sm flex items-center gap-2 mt-1">
+                                                    {new Date(date.date).toLocaleDateString()}
+                                                    {days === 0 ? <span className="bg-yellow-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">¡HOY!</span> :
+                                                        days < 0 ? <span className="text-gray-500 text-xs">Pasó hace {Math.abs(days)}d</span> :
+                                                            <span className="text-orange-300 text-xs">Faltan {days}d</span>}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => { setEditingDateId(date.id); setNewDateTitle(date.title); setNewDateValue(date.date); setNewDateRepeats(date.repeats !== false); window.scrollTo(0, 0); }} className="text-gray-500 hover:text-blue-400 p-2"><Edit2 size={18} /></button>
+                                                <button onClick={() => setDeleteModal({ isOpen: true, id: date.id, type: 'date' })} className="text-gray-500 hover:text-red-400 p-2"><Trash2 size={18} /></button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ============================================================== */}
+                    {/* GAME VIEW */}
+                    {/* ============================================================== */}
+                    {viewMode === 'game' && (
+                        <div className="fade-in max-w-3xl mx-auto space-y-8">
+                            <div className="glass-panel p-8 rounded-3xl text-center relative overflow-hidden border-t-4 border-purple-600">
+                                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-purple-900/20 to-transparent opacity-50"></div>
+                                <h2 className="text-3xl font-bold mb-6 relative z-10 text-white drop-shadow-md">✨ Preguntas Mágicas ✨</h2>
+                                {!gameQuestion ? (
+                                    <button onClick={handleGenerateGameQuestion} disabled={isGeneratingGame} className="bg-purple-900/50 text-purple-200 px-8 py-4 rounded-2xl font-bold shadow-lg flex items-center gap-3 mx-auto relative z-10 border border-purple-500/30 hover:bg-purple-800/60 transition-all active:scale-95">{isGeneratingGame ? <div className="spinner border-purple-400" /> : <><Sparkles /> Generar Pregunta</>}</button>
+                                ) : (
+                                    <div className="bg-black/40 p-6 md:p-8 rounded-2xl border border-white/10 relative z-10 text-left space-y-6">
+                                        <h3 className="text-xl md:text-2xl font-bold text-center mb-6 text-white leading-relaxed">"{gameQuestion}"</h3>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div className="bg-rose-900/20 p-4 rounded-2xl border border-rose-500/30">
+                                                <p className="text-xs text-rose-400 font-bold mb-2 uppercase flex items-center gap-1"><Heart size={12} /> Flor</p>
+                                                <textarea value={answerFlor} onChange={e => setAnswerFlor(e.target.value)} className="w-full p-3 rounded-xl bg-black/30 h-24 resize-none transition-all focus:ring-1 focus:ring-rose-500/50 outline-none"></textarea>
+                                            </div>
+                                            <div className="bg-sky-900/20 p-4 rounded-2xl border border-sky-500/30">
+                                                <p className="text-xs text-sky-400 font-bold mb-2 uppercase flex items-center gap-1"><User size={12} /> Terequito</p>
+                                                <textarea value={answerTereque} onChange={e => setAnswerTereque(e.target.value)} className="w-full p-3 rounded-xl bg-black/30 h-24 resize-none transition-all focus:ring-1 focus:ring-sky-500/50 outline-none"></textarea>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3 mt-2">
+                                            <button onClick={handleSaveActiveGame} className="flex-1 bg-purple-700 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-purple-600 transition-all active:scale-95">{answerFlor && answerTereque ? 'Guardar en Wiki' : 'Guardar Pendiente'}</button>
+                                            <button onClick={() => setGameQuestion('')} className="px-6 bg-white/5 text-gray-300 hover:text-white rounded-xl font-bold border border-white/10 transition-all active:scale-95">Cancelar</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {pendingGames.length > 0 && (
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-400 mb-6 flex gap-2 items-center"><Clock className="text-purple-500" /> Turnos Pendientes</h3>
+                                    <div className="grid gap-4">
+                                        {[...pendingGames].map(g => (
+                                            <div key={g.id} className="glass-panel p-6 rounded-2xl border-l-4 border-purple-600 relative group">
+                                                <button onClick={() => setDeleteModal({ isOpen: true, id: g.id, type: 'game_skip' })} className="absolute top-4 right-4 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100"><Trash2 size={18} /></button>
+                                                <h4 className="font-bold text-white mb-4 pr-8 text-lg">"{g.question}"</h4>
+                                                <div className="space-y-3">
+                                                    <div className={`p-3 rounded-xl border transition-all ${g.answerFlor ? 'bg-rose-900/20 border-rose-500/30' : 'bg-black/20 border-white/5 border-dashed'}`}>
+                                                        <div className="flex justify-between mb-2"><span className="text-xs font-bold text-rose-400 flex items-center gap-1"><Heart size={10} /> Flor</span>{g.answerFlor && <Check size={14} className="text-green-400" />}</div>
+                                                        {g.answerFlor ? <p className="text-sm text-gray-300">"{g.answerFlor}"</p> : <textarea className="w-full text-sm p-2 bg-transparent text-white rounded-lg resize-none outline-none focus:bg-white/5 transition-colors" onChange={(e) => setPendingAnswers(p => ({ ...p, [`${g.id}_flor`]: e.target.value }))} />}
+                                                    </div>
+                                                    <div className={`p-3 rounded-xl border transition-all ${g.answerTereque ? 'bg-sky-900/20 border-sky-500/30' : 'bg-black/20 border-white/5 border-dashed'}`}>
+                                                        <div className="flex justify-between mb-2"><span className="text-xs font-bold text-sky-400 flex items-center gap-1"><User size={10} /> Terequito</span>{g.answerTereque && <Check size={14} className="text-green-400" />}</div>
+                                                        {g.answerTereque ? <p className="text-sm text-gray-300">"{g.answerTereque}"</p> : <textarea className="w-full text-sm p-2 bg-transparent text-white rounded-lg resize-none outline-none focus:bg-white/5 transition-colors" onChange={(e) => setPendingAnswers(p => ({ ...p, [`${g.id}_tereque`]: e.target.value }))} />}
+                                                    </div>
+                                                    {(!g.answerFlor || !g.answerTereque) && <button onClick={() => handleCompletePendingGame(g)} className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl text-sm mt-2">Enviar Respuesta</button>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ============================================================== */}
+                    {/* WIKI VIEW */}
+                    {/* ============================================================== */}
+                    {viewMode === 'wiki' && (
+                        <div className="grid md:grid-cols-12 gap-6 fade-in">
+                            {/* FORMULARIO */}
+                            <div className="md:col-span-4 order-2 md:order-1">
+                                <div className={`glass-panel p-6 rounded-3xl sticky top-28 border-t-4 ${theme.border}`}>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className={`text-xl font-bold flex gap-2 ${theme.accent} items-center`}>{editingId ? <Edit2 size={20} /> : <Plus size={20} />}{editingId ? 'Editar' : 'Nuevo Recuerdo'}</h2>
+                                        {isAddingCategory && <button onClick={() => setIsAddingCategory(false)} className="text-gray-400"><X size={20} /></button>}
+                                    </div>
+                                    <form onSubmit={handleSubmit} className="space-y-4">
+                                        <div>
+                                            <div className="flex justify-between mb-1"><label className="text-[10px] font-bold tracking-wider text-gray-400">CATEGORÍA</label> {!isAddingCategory && <button type="button" onClick={() => setIsAddingCategory(true)} className={`text-[10px] underline ${theme.accent}`}>Nueva</button>}</div>
+                                            {isAddingCategory ? <div className="flex gap-2"><input autoFocus placeholder="Nombre..." className="flex-1 p-3 rounded-xl text-sm" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} /><button type="button" onClick={handleAddCategory} className={`p-3 rounded-xl text-white ${theme.bg}`}><Plus size={18} /></button></div> : <select name="category" value={formData.category} onChange={handleInputChange} className="w-full p-3 rounded-xl">{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>}
+                                        </div>
+                                        <div><label className="text-[10px] font-bold tracking-wider mb-1 block text-gray-400">TÍTULO / PREGUNTA</label><input name="question" value={formData.question} onChange={handleInputChange} placeholder="Ej: Canción favorita" className="w-full p-3 rounded-xl" required /></div>
+
+                                        {/* Rich Text Area */}
+                                        <div>
+                                            <label className="text-[10px] font-bold tracking-wider mb-1 block text-gray-400">DETALLE</label>
+                                            <div className="bg-black/20 border border-white/10 rounded-xl overflow-hidden focus-within:border-white/30 transition-colors">
+                                                {/* Toolbar */}
+                                                <div className="flex items-center gap-1 p-2 bg-white/5 border-b border-white/5">
+                                                    <button type="button" onClick={() => insertFormatting('**', '**')} className="p-1.5 text-gray-400 hover:text-white rounded hover:bg-white/10" title="Negrita"><BoldIcon size={14} /></button>
+                                                    <button type="button" onClick={() => insertFormatting('*', '*')} className="p-1.5 text-gray-400 hover:text-white rounded hover:bg-white/10" title="Cursiva"><ItalicIcon size={14} /></button>
+                                                    <div className="w-px h-4 bg-white/10 mx-1"></div>
+                                                    <button type="button" onClick={() => insertFormatting('❤️')} className="p-1.5 text-rose-400 hover:text-rose-300 rounded hover:bg-white/10 text-xs transition-colors" title="Corazón">❤️</button>
+                                                    <button type="button" onClick={() => insertFormatting('✨')} className="p-1.5 text-yellow-400 hover:text-yellow-300 rounded hover:bg-white/10 text-xs" title="Brillos">✨</button>
+                                                </div>
+                                                <textarea ref={answerRef} name="answer" value={formData.answer} onChange={handleInputChange} placeholder="Escribe aquí..." className="w-full p-3 h-28 resize-none bg-transparent border-none focus:ring-0 text-sm leading-relaxed" required />
+                                            </div>
+                                        </div>
+
+                                        {/* Image Support */}
+                                        <div>
+                                            <label className="text-[10px] font-bold tracking-wider mb-1 flex items-center gap-1 text-gray-400"><ImageIcon size={12} /> IMAGEN (URL OPCIONAL)</label>
+                                            <input type="url" name="imageUrl" value={formData.imageUrl} onChange={handleInputChange} placeholder="https://ejemplo.com/foto.jpg" className="w-full p-3 rounded-xl text-sm" />
+                                        </div>
+
+                                        <div className="flex gap-3 pt-4">{editingId && <button type="button" onClick={handleCancelEdit} className="px-6 py-3 bg-white/5 text-gray-300 hover:text-white rounded-xl font-bold text-sm border border-white/10 active:scale-95 transition-all">Cancelar</button>}<button type="submit" className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg ${theme.bg} ${theme.hover} transition-all active:scale-95`}>{editingId ? 'Guardar' : 'Crear Recuerdo'}</button></div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            {/* LISTA DE WIKI Y BUSCADOR */}
+                            <div className="md:col-span-8 space-y-6 order-1 md:order-2">
+                                {/* ORACULO CARD */}
+                                <div className={`glass-panel p-6 md:p-8 rounded-3xl shadow-xl relative overflow-hidden border border-white/10 flex flex-col md:flex-row items-center gap-6`}>
+                                    <div className="flex-1 w-full">
+                                        <h2 className={`text-2xl font-bold mb-3 flex gap-3 ${theme.accent} items-center`}><Sparkles size={24} /> Oráculo de {activeProfile === 'novia' ? 'Flor' : 'Terequito'}</h2>
+                                        <p className="text-gray-400 text-sm mb-6 leading-relaxed opacity-90">Pregunta lo que quieras. La IA analizará todos los recuerdos guardados para darte la mejor respuesta.</p>
+                                        <form onSubmit={handleAskAI} className="flex gap-2 w-full">
+                                            <input value={aiQuery} onChange={e => setAiQuery(e.target.value)} placeholder={`Ej: ¿Qué le puedo regalar?`} className="flex-1 p-3 md:p-4 rounded-2xl text-white bg-black/30 border border-white/10 placeholder-gray-500 focus:bg-black/40 transition-all shadow-inner text-sm" />
+                                            <button type="submit" disabled={isAiThinking} className="bg-white text-gray-900 px-4 md:px-6 rounded-2xl font-bold shadow-lg hover:bg-gray-100 hover:scale-105 transition-all flex items-center justify-center min-w-[60px]">{isAiThinking ? <div className="spinner border-gray-900" /> : 'Ir'}</button>
+                                        </form>
+                                        {aiResponse && <div className="mt-6 bg-black/20 p-5 rounded-2xl backdrop-blur-md border border-white/10 text-white text-sm leading-relaxed shadow-inner markdown-body animate-in fade-in zoom-in duration-300" dangerouslySetInnerHTML={{ __html: renderMarkdown(aiResponse) }} />}
+                                    </div>
+                                    <div className={`hidden md:flex items-center justify-center p-6 rounded-full bg-white/5 border border-white/5 ${theme.glow} animate-pulse`}>
+                                        <Sparkles size={60} className={theme.accent} strokeWidth={1} />
+                                    </div>
+                                </div>
+
+                                {/* CATEGORY CHIPS */}
+                                <div className="flex overflow-x-auto hide-scroll gap-2 pb-2">
+                                    <button onClick={() => setActiveCategoryFilter('Todas')} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeCategoryFilter === 'Todas' ? `${theme.bg} text-white shadow-lg` : 'bg-black/30 text-gray-400 hover:text-white'}`}>Todas</button>
+                                    {categories.map(c => {
+                                        const count = entries.filter(e => e.target === activeProfile && e.category === c).length;
+                                        if (count === 0) return null;
+                                        return <button key={c} onClick={() => setActiveCategoryFilter(c)} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border border-white/5 ${activeCategoryFilter === c ? `${theme.bg} text-white shadow-lg` : 'bg-black/20 text-gray-400 hover:text-white'}`}>{c} <span className="opacity-60 ml-1 text-[10px]">{count}</span></button>
+                                    })}
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-3.5 rounded-2xl glass-panel ${theme.accent}`}><Search size={20} /></div>
+                                    <input type="text" placeholder={`Buscar en recuerdos de ${activeProfile === 'novia' ? 'Flor' : 'Terequito'}...`} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-3.5 px-5 rounded-2xl glass-panel text-white focus:ring-1 focus:ring-white/20" />
+                                </div>
+
+                                <div className="grid gap-4">
+                                    {filteredEntries.slice(0, visibleEntriesCount).map(e => (
+                                        <div key={e.id} className={`glass-panel p-5 rounded-2xl relative group transition-colors ${editingId === e.id ? `ring-1 ${theme.accent}` : 'hover:bg-white/5'}`}>
+                                            <span className={`text-[10px] font-bold px-3 py-1 rounded-full bg-white/5 border border-white/10 uppercase ${theme.accent}`}>{e.category}</span>
+                                            <h3 className="font-bold text-lg mt-3 text-white">{e.question}</h3>
+
+                                            {/* Markdown Render */}
+                                            <div className="text-gray-300 mt-2 text-sm leading-relaxed font-light markdown-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(e.answer) }}></div>
+
+                                            {/* Image Render */}
+                                            {e.imageUrl && (
+                                                <div className="mt-3 rounded-xl overflow-hidden border border-white/10 max-h-64 flex justify-center bg-black/50">
+                                                    <img src={e.imageUrl} alt="Recuerdo" className="object-contain max-h-64" onError={(e) => { e.target.style.display = 'none' }} />
+                                                </div>
+                                            )}
+
+                                            <div className="mt-4 flex justify-between items-center pt-3 border-t border-white/5">
+                                                <span className="text-[10px] text-gray-500 font-mono">{e.date}</span>
+                                                <div className="flex gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => handleEdit(e)} className="p-2 text-gray-400 hover:text-blue-400 bg-white/5 rounded-lg"><Edit2 size={16} /></button><button onClick={() => setDeleteModal({ isOpen: true, id: e.id, type: 'wiki' })} className="p-2 text-gray-400 hover:text-red-400 bg-white/5 rounded-lg"><Trash2 size={16} /></button></div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {filteredEntries.length === 0 && <div className="text-center py-12 text-gray-500 bg-black/20 rounded-2xl border border-white/5">No hay recuerdos aquí aún.</div>}
+
+                                    {/* Load More Pagination */}
+                                    {filteredEntries.length > visibleEntriesCount && (
+                                        <button onClick={() => setVisibleEntriesCount(prev => prev + 15)} className="w-full py-4 text-sm font-bold text-gray-400 hover:text-white glass-panel rounded-2xl transition-colors">Cargar más recuerdos 👇</button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
