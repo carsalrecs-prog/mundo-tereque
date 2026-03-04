@@ -13,8 +13,8 @@ import {
 import { GoogleGenAI } from '@google/genai';
 
 const GEMINI_MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3.0-flash", "gemini-flash-latest"];
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDu34WET6qZHhV6iNscNb5NUv7_7GmVagc";
-const ai = new GoogleGenAI({ apiKey });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 // --- IMAGE COMPRESSION UTILITY ---
 const compressImage = (file, maxWidth = 1200, quality = 0.7) => new Promise((resolve) => {
@@ -331,6 +331,7 @@ export default function App() {
     };
 
     const fetchAI = async (prompt) => {
+        if (!ai) return `⚠️ Configura VITE_GEMINI_API_KEY en Vercel`;
         for (const model of GEMINI_MODELS_TO_TRY) {
             try {
                 const response = await ai.models.generateContent({
