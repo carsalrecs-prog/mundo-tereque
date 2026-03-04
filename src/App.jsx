@@ -13,7 +13,7 @@ import {
 import { GoogleGenAI } from '@google/genai';
 
 const GEMINI_MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3.0-flash", "gemini-flash-latest"];
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDkSAqtXh2MdpEou7XQPJxuEKw3eCL1m6g";
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDu34WET6qZHhV6iNscNb5NUv7_7GmVagc";
 const ai = new GoogleGenAI({ apiKey });
 
 // --- IMAGE COMPRESSION UTILITY ---
