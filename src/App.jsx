@@ -507,12 +507,55 @@ export default function App() {
                                 ) : (
                                     <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-black/40 p-6 md:p-8 rounded-2xl border border-white/10 relative z-10 text-left space-y-6">
                                         <h3 className="text-xl md:text-2xl font-bold text-center mb-6 text-white leading-relaxed">"{gameQuestion}"</h3>
-                                        <div className="flex gap-3 mt-2">
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-2 block flex items-center gap-1"><Heart size={12} /> Respuesta de Flor</label>
+                                                <textarea value={answerFlor} onChange={e => setAnswerFlor(e.target.value)} placeholder="Lo que yo creo es..." className="w-full h-24 p-3 rounded-xl bg-black/50 border border-rose-900/50 focus:border-rose-500/50 text-white text-sm outline-none resize-none" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider mb-2 block flex items-center gap-1"><User size={12} /> Respuesta de Terequito</label>
+                                                <textarea value={answerTereque} onChange={e => setAnswerTereque(e.target.value)} placeholder="Para mí es..." className="w-full h-24 p-3 rounded-xl bg-black/50 border border-sky-900/50 focus:border-sky-500/50 text-white text-sm outline-none resize-none" />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3 mt-4">
                                             <button onClick={() => setGameQuestion('')} className="px-6 bg-white/5 text-gray-300 hover:text-white rounded-xl font-bold border border-white/10 transition-all active:scale-95">Cancelar</button>
+                                            <button onClick={handleSaveActiveGame} className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-bold border border-white/10 shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] transition-all active:scale-95 text-sm">
+                                                {answerFlor && answerTereque ? 'Responder y guardar en Wiki ❤️' : 'Falta respuesta (Guardar pendiente) ⏳'}
+                                            </button>
                                         </div>
                                     </motion.div>
                                 )}
                             </div>
+
+                            {/* PENDIENTES */}
+                            {pendingGames.length > 0 && (
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-gray-400 tracking-wider uppercase mb-4 flex items-center gap-2"><Clock size={16} /> Esperando Respuesta ({pendingGames.length})</h3>
+                                    {pendingGames.map((game, idx) => (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} key={game.id} className="glass-panel p-5 rounded-2xl border-l-4 border-indigo-500">
+                                            <p className="font-bold text-lg text-white mb-4">"{game.question}"</p>
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                                                    <span className="text-[10px] text-rose-400 font-bold mb-1 block">FLOR {game.answerFlor ? '✅ Respondió' : '⏳ Faltas Tú'}</span>
+                                                    {game.answerFlor ? <p className="text-gray-300 text-sm italic">Respuesta oculta hasta que ambos contesten...</p> :
+                                                        <textarea placeholder="Tu respuesta..." value={pendingAnswers[`${game.id}_flor`] || ''} onChange={e => setPendingAnswers(prev => ({ ...prev, [`${game.id}_flor`]: e.target.value }))} className="w-full p-2 mt-1 rounded bg-black/30 border border-white/10 text-white text-sm outline-none h-16" />}
+                                                </div>
+                                                <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                                                    <span className="text-[10px] text-sky-400 font-bold mb-1 block">TEREQUITO {game.answerTereque ? '✅ Respondió' : '⏳ Faltas Tú'}</span>
+                                                    {game.answerTereque ? <p className="text-gray-300 text-sm italic">Respuesta oculta hasta que ambos contesten...</p> :
+                                                        <textarea placeholder="Tu respuesta..." value={pendingAnswers[`${game.id}_tereque`] || ''} onChange={e => setPendingAnswers(prev => ({ ...prev, [`${game.id}_tereque`]: e.target.value }))} className="w-full p-2 mt-1 rounded bg-black/30 border border-white/10 text-white text-sm outline-none h-16" />}
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between mt-4">
+                                                <button onClick={() => setDeleteModal({ isOpen: true, id: game.id, type: 'game_skip' })} className="px-4 py-2 text-xs text-gray-400 hover:text-red-400 transition-colors">Descartar</button>
+                                                {((game.answerFlor || pendingAnswers[`${game.id}_flor`]) && (game.answerTereque || pendingAnswers[`${game.id}_tereque`])) && (
+                                                    <button onClick={() => handleCompletePendingGame(game)} className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-500 shadow-lg animate-pulse">¡Completar y Guardar!</button>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
