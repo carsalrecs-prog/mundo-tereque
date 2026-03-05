@@ -1,20 +1,20 @@
 {
-  "name": "Mundo Tereque",
-  "short_name": "M.Tereque",
+  "name": "Wiki Tereque",
+  "short_name": "Wiki Tereque",
   "description": "Nuestra base de datos de amor y recuerdos",
-  "start_url": "/",
+  "start_url": "/?v=new",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#e11d48",
   "icons": [
     {
-      "src": "/app-icon-192.png",
+      "src": "/tereque-icon-192.png?v=9",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/app-icon-512.png",
+      "src": "/tereque-icon-512.png?v=9",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
