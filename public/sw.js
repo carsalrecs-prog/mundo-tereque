@@ -1,10 +1,11 @@
-const CACHE_NAME = 'mundo-tereque-v4';
+const CACHE_NAME = 'mundo-tereque-v5';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/favicon.png?v=5'
 ];
 
 self.addEventListener('install', event => {
