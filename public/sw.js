@@ -1,10 +1,10 @@
-const CACHE_NAME = 'mundo-tereque-v6';
+const CACHE_NAME = 'mundo-tereque-v7';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  '/manifest.json?v=6',
+  '/icon-192.png?v=6',
+  '/icon-512.png?v=6',
   '/favicon.png?v=6'
 ];
 
